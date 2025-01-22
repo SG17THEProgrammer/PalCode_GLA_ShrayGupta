@@ -1,8 +1,8 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc } from "firebase/firestore";
+import { getFirestore, collection, addDoc , setDoc, getDoc, doc } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBujyVrvYr7TbV7z8L-HQJLnQKxNesYZWg",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "palcodeassignment-3ae10.firebaseapp.com",
   projectId: "palcodeassignment-3ae10",
   storageBucket: "palcodeassignment-3ae10.firebasestorage.app",
@@ -11,8 +11,7 @@ const firebaseConfig = {
   measurementId: "G-W94J8NRZH2"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-export { db, collection, addDoc };
+export { db, collection, addDoc , setDoc, getDoc, doc};

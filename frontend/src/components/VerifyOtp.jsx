@@ -15,9 +15,8 @@ const VerifyOtp = ({ email }) => {
     }
 
     try {
-      // Verify OTP with backend
-      const response = await axios.post('http://localhost:3000/verifyOtp', { email, otp });
-      if (response.data.success) {
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/verifyOtp`, { email, otp });
+      if (res.data.success) {
 
         await addDoc(collection(db, 'users'), {
           email,
@@ -26,10 +25,7 @@ const VerifyOtp = ({ email }) => {
 
         toast.success(`Login Successful`);
         navigate("/home")
-// setTimeout(()=>{
-//   // After OTP verification, trigger Google sign-in
-//   handleGoogleSignIn();
-// },4000)
+
       } else {
         toast.error('Invalid OTP');
       }
@@ -39,6 +35,7 @@ const VerifyOtp = ({ email }) => {
   };
 
 
+  
 
   return (
     <div className="verify-otp-form">

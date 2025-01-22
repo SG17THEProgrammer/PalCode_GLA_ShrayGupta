@@ -21,7 +21,7 @@ const EmailForm = ({ onOtpSent }) => {
 
     try {
       setLoading(true);
-      await axios.post('http://localhost:3000/sendOtp', { email });
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/sendOtp`, { email });
       onOtpSent(email);
       toast.success('OTP sent successfully');
     } catch (err) {

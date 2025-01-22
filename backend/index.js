@@ -2,7 +2,6 @@ require("dotenv").config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-// const connectToDb = require("./src/db/conn");
 const routes = require('./src/route');
 const app = express();
 
@@ -11,8 +10,8 @@ const corsOptions = {
     methods: "GET, POST, PUT, DELETE, PATCH, HEAD",
     credentials: true,
 };
-app.use(express.json()); // Parses JSON data
-app.use(express.urlencoded({ extended: true })); // Parses URL-encoded data with support for objects
+app.use(express.json()); 
+app.use(express.urlencoded({ extended: true })); 
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions)); 
@@ -29,11 +28,7 @@ app.use(routes);
 // })
 
 
-
-
-
 const PORT =3000
-// connectToDb() // for connecting to mongodb
 
 app.listen(PORT , ()=>{
     console.log(`Server running on port ${PORT}`)

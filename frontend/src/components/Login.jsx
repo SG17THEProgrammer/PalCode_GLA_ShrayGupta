@@ -12,7 +12,6 @@ const Login = () => {
   };
 
   const handleSignInSuccess = (token) => {
-    // You can perform any additional logic here, like redirecting to Home
     localStorage.setItem('accessToken', token);
   };
 

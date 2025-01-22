@@ -5,9 +5,8 @@ import { BsCollectionPlayFill } from "react-icons/bs";
 import { gapi } from 'gapi-script';
 import Sidebar from './Sidebar';
 import { toast } from 'react-toastify';
-import { DropZone } from './DropZone';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { db, setDoc, getDoc, doc } from '../firebase';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -17,49 +16,37 @@ const Home = () => {
   const [videos, setVideos] = useState([]);
   const [selectedVideo, setSelectedVideo] = useState(null);
 
-  // Fetch playlists on component mount
   useEffect(() => {
     if (accessToken) {
       fetchPlaylists();
     }
   }, [accessToken]);
 
-
-   useEffect(() => {
-      // Initialize the Google API client
-      const initClient = () => {
-        gapi.client.init({
-          apiKey: 'AIzaSyDvzwDFrJQSUoSBLPUJGHUUn9QwLcLTFn4', // YouTube API key
-          clientId: '1012840825507-9tf1veqnd9gcodjh41u6ldh7vvbijh5c.apps.googleusercontent.com', // Your OAuth 2.0 client ID
-          scope: 'https://www.googleapis.com/auth/youtube.readonly', // Scope to access YouTube data
-          discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'],
-        });
-      };
-      gapi.load('client:auth2', initClient);
-    }, []);
-
-
-    const handleSignInSuccess = (token) => {
-      // You can perform any additional logic here, like redirecting to Home
-      localStorage.setItem('accessToken', token);
-    };
-
-    // Sign in the user with Google OAuth 2.0
-    const handleGoogleSignIn = () => {
-      gapi.auth2.getAuthInstance().signIn().then((googleUser) => {
-        // Get the Google access token after sign-in
-        const token = googleUser.getAuthResponse().access_token;
-  
-        // Store the token in localStorage
-        localStorage.setItem('accessToken', token);
-  
-        // Pass the token to the parent component or store it in the state
-        handleSignInSuccess(token);
-        toast.success('Import successfull ');
-
-        // navigate('/home');
+  useEffect(() => {
+    const initClient = () => {
+      gapi.client.init({
+        apiKey: `${import.meta.env.VITE_API_KEY_2}`,
+        clientId: `${import.meta.env.VITE_CLIENT_ID}`,
+        scope: 'https://www.googleapis.com/auth/youtube.readonly',
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'],
       });
     };
+    gapi.load('client:auth2', initClient);
+  }, []);
+
+  const handleSignInSuccess = (token) => {
+    localStorage.setItem('accessToken', token);
+  };
+
+  const handleGoogleSignIn = () => {
+    gapi.auth2.getAuthInstance().signIn().then((googleUser) => {
+      const token = googleUser.getAuthResponse().access_token;
+      localStorage.setItem('accessToken', token);
+      handleSignInSuccess(token);
+      toast.success('Import successful');
+      window.location.reload();
+    });
+  };
 
   const fetchPlaylists = async () => {
     try {
@@ -68,15 +55,14 @@ const Home = () => {
           Authorization: `Bearer ${accessToken}`,
         },
         params: {
-          part: 'snippet', // Get the playlist snippet (title, description, thumbnails)
-          mine: true, // Get playlists of the authenticated user
-          maxResults: 10, // Limit to 10 playlists
+          part: 'snippet',
+          mine: true,
+          maxResults: 10,
         },
       });
 
       const playlistsData = response.data.items;
 
-      // Fetch the video count for each playlist by querying playlistItems API
       const playlistsWithVideoCount = await Promise.all(playlistsData.map(async (playlist) => {
         const playlistItemsResponse = await axios.get('https://youtube.googleapis.com/youtube/v3/playlistItems', {
           headers: {
@@ -85,23 +71,22 @@ const Home = () => {
           params: {
             part: 'snippet',
             playlistId: playlist.id,
-            maxResults: 1, // We only need the count of items, so we just fetch one item
+            maxResults: 1,
           },
         });
-        const videoCount = playlistItemsResponse.data.pageInfo.totalResults; // Get the total number of videos in the playlist
+        const videoCount = playlistItemsResponse.data.pageInfo.totalResults;
         return {
           ...playlist,
-          videoCount, // Add video count to playlist data
+          videoCount,
         };
       }));
 
-      setPlaylists(playlistsWithVideoCount); // Update the playlists state with video counts
+      setPlaylists(playlistsWithVideoCount);
     } catch (error) {
       console.error('Error fetching playlists:', error);
     }
   };
 
-  // Fetch videos for the selected playlist
   const fetchPlaylistVideos = async (playlistId) => {
     try {
       const response = await axios.get('https://youtube.googleapis.com/youtube/v3/playlistItems', {
@@ -111,122 +96,139 @@ const Home = () => {
         params: {
           part: 'snippet',
           playlistId: playlistId,
-          maxResults: 10, // Limit to 10 videos per playlist
+          maxResults: 10,
         },
       });
       setVideos(response.data.items);
-      setSelectedPlaylistId(playlistId); // Set selected playlist to highlight
-      setSelectedVideo(null); // Clear selected video when new playlist is selected
+      setSelectedPlaylistId(playlistId);
+      setSelectedVideo(null);
     } catch (error) {
       console.error('Error fetching playlist videos:', error);
     }
   };
 
-  // Handle video selection from the playlist
   const handleVideoClick = (video) => {
     setSelectedVideo(video);
   };
 
-  // Handle log out
   const handleLogOut = () => {
-    // Clear the token from localStorage
     localStorage.removeItem('accessToken');
     setAccessToken(null);
     setPlaylists([]);
     setSelectedVideo(null);
-    toast.success('Logged out successfully')
+    toast.success('Logged out successfully');
     setTimeout(() => {
-
       navigate('/');
-    },3000)
+    }, 1000);
+  };
+
+  const handleDragEnd = (result) => {
+    const { destination, source } = result;
+
+    if (!destination) return;
+
+    if (destination.index === source.index) return;
+
+    const reorderedPlaylists = Array.from(playlists);
+    const [movedItem] = reorderedPlaylists.splice(source.index, 1);
+    reorderedPlaylists.splice(destination.index, 0, movedItem);
+
+    setPlaylists(reorderedPlaylists);
+  };
+
+  const saveLayout = async () => {
+    try {
+      await setDoc(doc(db, 'layouts', 'playlistLayout'), {
+        playlists: playlists.map(playlist => playlist.id),
+      });
+      toast.success('Layout saved!');
+    } catch (error) {
+      console.error('Error saving layout: ', error);
+    }
+  };
+
+  const loadLayout = async () => {
+    try {
+      const docSnap = await getDoc(doc(db, 'layouts', 'playlistLayout'));
+      if (docSnap.exists()) {
+        const savedOrder = docSnap.data().playlists;
+        const reorderedPlaylists = [...playlists];
+        const newOrder = savedOrder.map(id => reorderedPlaylists.find(playlist => playlist.id === id));
+        setPlaylists(newOrder);
+        toast.success('Layout loaded!');
+      } else {
+        toast.error('No saved layout found!');
+      }
+    } catch (error) {
+      console.error('Error loading layout: ', error);
+    }
   };
 
   return (
     <div className="home-container">
-      {/* Sidebar Section */}
       <div className="sidebar">
-       <Sidebar></Sidebar>
+        <Sidebar />
       </div>
-
-      {/* Main Content Section */}
       <div className="content">
-        {/* Navbar */}
         <div className="navbar">
           <div>
             <p>Design Studio</p>
           </div>
           <div className="btnDiv">
             <button className="btn" onClick={handleGoogleSignIn}>Import from Youtube</button>
-            <button className="btn">Save Layout</button>
-            <button className="btn">Load Layout</button>
+            <button className="btn" onClick={saveLayout}>Save Layout</button>
+            <button className="btn" onClick={loadLayout}>Load Layout</button>
             <button className="btn" onClick={handleLogOut}>Logout</button>
-            <p>email &nbsp;<i class="fa fa-angle-down" aria-hidden="true"></i></p>
           </div>
         </div>
-
-        {/* Playlist Section */}
         <div className="playlist-container">
-        <DndProvider backend={HTML5Backend}>
-          <div className="playlists">
-            {playlists.map((playlist) => (
-              <div
-                key={playlist.id}
-                className={`playlist`}
-                onClick={() => fetchPlaylistVideos(playlist.id)}
-              >
-              <div className='playDiv'>
-
-                <img
-                  className="playlist-thumbnail"
-                  src={playlist.snippet.thumbnails.medium.url}
-                  alt={playlist.snippet.title}
-                />
-                <h3 className='playlistTitle'>{playlist.snippet.title}</h3>
-                {/* Display video count */}
-                <div className='cntBtn'>
-                <BsCollectionPlayFill /> &nbsp; &nbsp;
-                <h4 className=''>{playlist.videoCount} Videos</h4> 
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="character">
+              {(provided) => (
+                <div className="playlists" {...provided.droppableProps} ref={provided.innerRef}>
+                  {playlists.map((playlist, idx) => (
+                    <Draggable key={playlist.id} draggableId={playlist.id} index={idx}>
+                      {(provided) => (
+                        <div {...provided.draggableProps} {...provided.dragHandleProps} ref={provided.innerRef} className="playlist" onClick={() => fetchPlaylistVideos(playlist.id)}>
+                          <div className="playDiv">
+                            <img className="playlist-thumbnail" src={playlist.snippet.thumbnails.medium.url} alt={playlist.snippet.title} />
+                            <h3 className="playlistTitle">{playlist.snippet.title}</h3>
+                            <div className="cntBtn">
+                              <BsCollectionPlayFill /> &nbsp; &nbsp;
+                              <h4>{playlist.videoCount} Videos</h4>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
                 </div>
-              </div>
-              </div>
-            ))}
-          </div>
-          </DndProvider>
-          <DropZone playlists={playlists} setPlaylists={setPlaylists} />
-
-          {/* Video Section */}
+              )}
+            </Droppable>
+          </DragDropContext>
           <div className="videos">
             {selectedPlaylistId && (
               <>
-                <h2 style={{ color: "white",textDecoration:"underline" }}>Videos in Playlist</h2>
+                <h2 style={{ color: "white", textDecoration: "underline" }}>Videos in Playlist</h2>
                 <div className="video-thumbnails">
                   {videos.slice(0, 5).map((video) => (
                     <div key={video.id} className="video-item" onClick={() => handleVideoClick(video)}>
-                    <div className='vidDiv'>
-                    <div>
-
-                      <img
-                        className="video-thumbnail"
-                        src={video.snippet.thumbnails.medium.url}
-                        alt={video.snippet.title}
-                      />
-                    </div>
-                    <div style={{marginLeft:"10px"}}>
-                      <p>{video.snippet.title}</p>
-                    </div>
-                    </div>
+                      <div className="vidDiv">
+                        <img className="video-thumbnail" src={video.snippet.thumbnails.medium.url} alt={video.snippet.title} />
+                        <div style={{ marginLeft: "10px" }}>
+                          <p>{video.snippet.title}</p>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
-
-                {/* Display Selected Video */}
                 {selectedVideo && (
                   <div className="video-details">
                     <h2>{selectedVideo.snippet.title}</h2>
                     <iframe
                       src={`https://www.youtube.com/embed/${selectedVideo.snippet.resourceId.videoId}`}
                       title={selectedVideo.snippet.title}
-                      // frameBorder="0"
                       allowFullScreen
                       className="video-player"
                     />
