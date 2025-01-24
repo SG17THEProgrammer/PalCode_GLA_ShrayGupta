@@ -20,14 +20,14 @@ const sendOtp = async (req, res) => {
         pass: process.env.PASSWORD, 
       },
     });
-
+console.log(transporter)
     const receiver = {
       from: process.env.MY_MAIL,
       to: email,
       subject: 'OTP for Login',
       text: `Your OTP is: ${otp}`,
     };
-
+console.log(receiver)
     transporter.sendMail(receiver, (error, info) => {
       if (error) {
         console.error('Error sending OTP:', error);

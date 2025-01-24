@@ -219,7 +219,9 @@ const Home = () => {
                 <h2 style={{ color: "white", textDecoration: "underline" }}>Videos in Playlist</h2>
                 <div className="video-thumbnails">
                   {videos.slice(0, 5).map((video) => (
-                    <div key={video.id} className="video-item" onClick={() => handleVideoClick(video)}>
+                    <div key={video.id} className="video-item" 
+                    // onClick={() => handleVideoClick(video)}
+                    >
                       <div className="vidDiv">
                         <img className="video-thumbnail" src={video.snippet.thumbnails.medium.url} alt={video.snippet.title} />
                         <div style={{ marginLeft: "10px" }}>
