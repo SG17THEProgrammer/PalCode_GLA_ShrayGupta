@@ -10,11 +10,13 @@ const corsOptions = {
     methods: "GET, POST, PUT, DELETE, PATCH, HEAD",
     credentials: true,
 };
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
+
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true })); 
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); 
 
 app.use(bodyParser.json({ limit: '100mb' }));
 app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }));
