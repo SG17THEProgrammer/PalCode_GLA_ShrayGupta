@@ -44,7 +44,9 @@ const Home = () => {
       localStorage.setItem('accessToken', token);
       handleSignInSuccess(token);
       toast.success('Import successful');
-      window.location.reload();
+      setTimeout(()=>{
+        window.location.reload();
+      },1000)
     });
   };
 
@@ -164,6 +166,8 @@ const Home = () => {
     }
   };
 
+  console.log(JSON.stringify(playlists, null, 2));
+
   return (
     <div className="home-container">
       <div className="sidebar">
@@ -182,6 +186,7 @@ const Home = () => {
           </div>
         </div>
         <div className="playlist-container">
+        <React.StrictMode>
           <DragDropContext onDragEnd={handleDragEnd}>
             <Droppable droppableId="character">
               {(provided) => (
@@ -207,6 +212,7 @@ const Home = () => {
               )}
             </Droppable>
           </DragDropContext>
+          </React.StrictMode>
           <div className="videos">
             {selectedPlaylistId && (
               <>

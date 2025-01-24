@@ -4,9 +4,14 @@ import './App.css'
 import App from './App.jsx'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
+
+<DndProvider backend={HTML5Backend}>
+
     <App />
     <ToastContainer
                 position="top-right"
@@ -20,5 +25,6 @@ createRoot(document.getElementById('root')).render(
                 bodyClassName="toastBody"
 
             />
+</DndProvider>
   </StrictMode>,
 )
