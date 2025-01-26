@@ -192,7 +192,7 @@ const Home = () => {
               {(provided) => (
                 <div className="playlists" {...provided.droppableProps} ref={provided.innerRef}>
                   {playlists.map((playlist, idx) => (
-                    <Draggable key={playlist.id} draggableId={playlist.id} index={idx}>
+                    <Draggable key={playlist.id} draggableId={playlist.id.toString()} index={idx}>
                       {(provided) => (
                         <div {...provided.draggableProps} {...provided.dragHandleProps} ref={provided.innerRef} className="playlist" onClick={() => fetchPlaylistVideos(playlist.id)}>
                           <div className="playDiv">
